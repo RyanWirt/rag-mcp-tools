@@ -11,7 +11,7 @@ from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
 from services import mcp_server
-from services.rag_api.app import app, get_store
+from services.rag_api.app import PDF_ERROR, app, get_store
 from services.rag_api.store import INDEX, ManualStore, chunks
 
 
@@ -127,6 +127,7 @@ class LabTests(unittest.TestCase):
         result = self.client.post("/ingest").json()
         self.assertEqual([item["filename"] for item in result["indexed"]], ["good.PDF"])
         self.assertEqual({item["filename"] for item in result["errors"]}, {"bad.pdf", "scan.pdf"})
+        self.assertTrue(all(item["error"] == PDF_ERROR for item in result["errors"]))
 
     def test_invalid_upload_does_not_replace_existing_file(self):
         target = self.folder / "manual.pdf"
@@ -137,6 +138,7 @@ class LabTests(unittest.TestCase):
             self.assertEqual(response.status_code, 400)
         response = self.client.post("/upload", files={"file": ("manual.pdf", b"bad")})
         self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["detail"], PDF_ERROR)
         self.assertEqual(target.read_bytes(), original)
         self.assertEqual(list(self.folder.iterdir()), [target])
         with patch("services.rag_api.app.MAX_PDF_BYTES", 5):

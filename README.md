@@ -93,7 +93,8 @@ the same lab services plus the `dev` workspace container. You can also use this
 route without first running `docker compose up`.
 
 The workspace is `/workspaces/rag-mcp-tools`; the interpreter and preinstalled
-packages are at `/app/.venv/bin/python`. Run tests in its terminal:
+packages are at `/app/.venv/bin/python`. Git and curl are included in the
+development image. Run tests in its terminal:
 
 ```bash
 python -m unittest discover -s tests -v

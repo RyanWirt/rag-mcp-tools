@@ -68,7 +68,9 @@ services:
       - ollama-data:/root/.ollama
 
   dev:
-    build: .
+    build:
+      context: .
+      target: dev
     profiles: [dev]
     command: ["sleep", "infinity"]
     working_dir: /workspaces/rag-mcp-tools

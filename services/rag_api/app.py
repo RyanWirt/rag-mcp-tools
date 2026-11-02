@@ -14,6 +14,10 @@ from services.rag_api.store import MAX_PDF_BYTES, ManualStore
 
 MANUALS_DIR = Path(os.getenv("MANUALS_DIR", "/manuals"))
 WRITE_LOCK = Lock()
+PDF_ERROR = (
+    "Could not read PDF. Use an unencrypted, text-based PDF up to 50 MiB; "
+    "scanned PDFs need OCR first."
+)
 
 
 @asynccontextmanager
@@ -63,8 +67,8 @@ def ingest(store: ManualStore = Depends(get_store)):
                 continue
             try:
                 indexed.append(store.ingest(path))
-            except (ValueError, PyPdfError) as error:
-                errors.append({"filename": path.name, "error": str(error)})
+            except (ValueError, PyPdfError):
+                errors.append({"filename": path.name, "error": PDF_ERROR})
     return {"indexed": indexed, "errors": errors}
 
 
@@ -93,7 +97,7 @@ def upload(file: UploadFile = File(...), store: ManualStore = Depends(get_store)
             result = store.ingest(staged)
             staged.replace(MANUALS_DIR / filename)
         except (ValueError, PyPdfError) as error:
-            raise HTTPException(400, str(error)) from error
+            raise HTTPException(400, PDF_ERROR) from error
     return result
 
 
