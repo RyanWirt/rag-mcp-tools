@@ -1,0 +1,86 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.6
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      xpack.security.enrollment.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    ports:
+      - "127.0.0.1:9200:9200"
+    volumes:
+      - elastic-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' > /dev/null"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+    mem_limit: 2g
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.19.6
+    environment:
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
+      XPACK_SECURITY_ENABLED: "false"
+      TELEMETRY_ENABLED: "false"
+    ports:
+      - "127.0.0.1:5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    mem_limit: 2g
+
+  rag-api:
+    build: .
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      MANUALS_DIR: /manuals
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-}
+    volumes:
+      - ./manuals:/manuals
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mcp:
+    build: .
+    command: ["python", "-m", "services.mcp_server"]
+    environment:
+      RAG_API_URL: http://rag-api:8000
+    ports:
+      - "127.0.0.1:8001:8001"
+    depends_on:
+      rag-api:
+        condition: service_healthy
+
+  ollama:
+    image: ollama/ollama:0.12.6
+    profiles: [llm]
+    volumes:
+      - ollama-data:/root/.ollama
+
+  dev:
+    build:
+      context: .
+      target: dev
+    profiles: [dev]
+    command: ["sleep", "infinity"]
+    working_dir: /workspaces/rag-mcp-tools
+    volumes:
+      - .:/workspaces/rag-mcp-tools
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      MANUALS_DIR: /workspaces/rag-mcp-tools/manuals
+      RAG_API_URL: http://rag-api:8000
+
+volumes:
+  elastic-data:
+  ollama-data:

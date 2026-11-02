@@ -1,0 +1,16 @@
+{
+  "servers": {
+    "manuals": {
+      "type": "http",
+      "url": "${input:manualsMcpUrl}"
+    }
+  },
+  "inputs": [
+    {
+      "id": "manualsMcpUrl",
+      "type": "promptString",
+      "description": "MCP URL: host = http://localhost:8001/mcp; dev container = http://mcp:8001/mcp",
+      "default": "http://localhost:8001/mcp"
+    }
+  ]
+}
