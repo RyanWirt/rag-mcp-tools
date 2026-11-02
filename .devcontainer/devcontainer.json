@@ -1,0 +1,16 @@
+{
+  "name": "MCP + RAG + Elasticsearch lab",
+  "dockerComposeFile": "../compose.yaml",
+  "service": "dev",
+  "runServices": ["dev", "elasticsearch", "kibana", "rag-api", "mcp"],
+  "workspaceFolder": "/workspaces/rag-mcp-tools",
+  "shutdownAction": "stopCompose",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python"],
+      "settings": {
+        "python.defaultInterpreterPath": "/app/.venv/bin/python"
+      }
+    }
+  }
+}
